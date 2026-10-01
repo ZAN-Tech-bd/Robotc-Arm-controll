@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 # ZAN Tech Robotic Arm Controller — 4-DOF & 6-DOF
-=======
-Robotic Arm Controller
->>>>>>> a5e6d265b398a35570a47b3e13b31c093a3c852b
+
 
 **Build a robot arm, flash one file, double-click one app, drag some sliders.**
 This repo has everything you need: Arduino firmware for a 5-servo (4-DOF) arm *or* a
