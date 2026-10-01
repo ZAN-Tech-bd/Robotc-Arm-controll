@@ -1,0 +1,3 @@
+__pycache__/
+*.pyc
+pc-app/crash_log.txt
