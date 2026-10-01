@@ -1,4 +1,8 @@
 # ZAN Tech Robotic Arm Controller — 4-DOF & 6-DOF
+<<<<<<< HEAD
+=======
+
+>>>>>>> e51cac8e4cc029a29ec3339a8fa0608b3e395659
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Open Source](https://img.shields.io/badge/Open%20Source-%E2%9D%A4-red.svg)](https://github.com/ZAN-Tech-bd/4-Dof-Robotc-Arm-controll)
