@@ -1,52 +1,59 @@
 /*
-  4-DOF Robotic Arm Controller (Arduino Nano)
-  5 Servos: Base, Shoulder, Elbow, Wrist, Gripper
+  6-DOF Robotic Arm Controller (Arduino Nano)
+  6 Servos: Base, Shoulder, Elbow, Wrist Pitch, Wrist Roll, Gripper
   All servos are 180-degree servos, assembled/centered at 90 degrees.
 
   Controlled over Serial Monitor (9600 baud, line ending = Newline).
+  This is the 6-DOF sibling of firmware/4dof-arm - same serial protocol
+  and behavior, just with an extra wrist axis (pitch + roll instead of
+  a single wrist joint). The ZAN Tech PC app (pc-app/) talks to either
+  one depending on which "Arm Type" you pick in its menu.
 
   TWO MODES:
     1) SINGLE TEST MODE  - move and tune one servo at a time
     2) FULL CONTROL MODE - move all servos together with one command
 
   ---------------- SERIAL COMMANDS ----------------
-  MENU                 -> show the menu again
+  MENU                      -> show the menu again
 
   --- Single servo test mode ---
-  T1                   -> select servo 1 (Base)      for testing
-  T2                   -> select servo 2 (Shoulder)  for testing
-  T3                   -> select servo 3 (Elbow)     for testing
-  T4                   -> select servo 4 (Wrist)     for testing
-  T5                   -> select servo 5 (Gripper)   for testing
-  <number 0-180>       -> once a servo is selected (T1..T5), just type an
-                          angle and press Enter to move ONLY that servo
-  HOME                 -> send the selected servo back to 90 degrees
-  EXIT                 -> leave single test mode
+  T1                        -> select servo 1 (Base)        for testing
+  T2                        -> select servo 2 (Shoulder)    for testing
+  T3                        -> select servo 3 (Elbow)       for testing
+  T4                        -> select servo 4 (Wrist Pitch) for testing
+  T5                        -> select servo 5 (Wrist Roll)  for testing
+  T6                        -> select servo 6 (Gripper)     for testing
+  <number 0-180>            -> once a servo is selected (T1..T6), just type an
+                               angle and press Enter to move ONLY that servo
+  HOME                      -> send the selected servo back to 90 degrees
+  EXIT                      -> leave single test mode
 
-  --- Full control mode (all 5 servos in one line) ---
-  B90 S90 E90 W90 G90  -> set Base, Shoulder, Elbow, Wrist, Gripper angles
-                          in one command (order fixed: B S E W G).
-                          You don't need to include all five letters;
-                          only the ones you type will move, e.g: B45 E120
-  HOMEALL              -> send all 5 servos to 90 degrees (center/assembly pose)
-  POS                  -> print the current angle of all servos
+  --- Full control mode (all 6 servos in one line) ---
+  B90 S90 E90 P90 R90 G90   -> set Base, Shoulder, Elbow, Wrist Pitch,
+                               Wrist Roll, Gripper angles in one command
+                               (order doesn't matter). You don't need to
+                               include all six letters; only the ones you
+                               type will move, e.g: B45 E120
+  HOMEALL                   -> send all 6 servos to 90 degrees (center/assembly pose)
+  POS                       -> print the current angle of all servos
   --------------------------------------------------
 */
 
 #include <Servo.h>
 
 // ---------- Pin configuration ----------
-const uint8_t PIN_BASE     = 3;
-const uint8_t PIN_SHOULDER = 5;
-const uint8_t PIN_ELBOW    = 6;
-const uint8_t PIN_WRIST    = 9;
-const uint8_t PIN_GRIPPER  = 10;
+const uint8_t PIN_BASE        = 3;
+const uint8_t PIN_SHOULDER    = 5;
+const uint8_t PIN_ELBOW       = 6;
+const uint8_t PIN_WRIST_PITCH = 9;
+const uint8_t PIN_WRIST_ROLL  = 10;
+const uint8_t PIN_GRIPPER     = 11;
 
-const uint8_t NUM_SERVOS = 5;
+const uint8_t NUM_SERVOS = 6;
 
 Servo servos[NUM_SERVOS];
-const uint8_t servoPins[NUM_SERVOS] = { PIN_BASE, PIN_SHOULDER, PIN_ELBOW, PIN_WRIST, PIN_GRIPPER };
-const char*   servoNames[NUM_SERVOS] = { "Base", "Shoulder", "Elbow", "Wrist", "Gripper" };
+const uint8_t servoPins[NUM_SERVOS] = { PIN_BASE, PIN_SHOULDER, PIN_ELBOW, PIN_WRIST_PITCH, PIN_WRIST_ROLL, PIN_GRIPPER };
+const char*   servoNames[NUM_SERVOS] = { "Base", "Shoulder", "Elbow", "WristPitch", "WristRoll", "Gripper" };
 int           servoAngle[NUM_SERVOS];     // last commanded angle of each servo
 bool          servoAttached[NUM_SERVOS];  // is this servo currently receiving a PWM signal?
 unsigned long servoMoveDeadline[NUM_SERVOS]; // when it's safe to stop sending PWM (ms)
@@ -151,7 +158,7 @@ void handleCommand(String line) {
     return;
   }
 
-  // --- Enter single-servo test mode: T1..T5 ---
+  // --- Enter single-servo test mode: T1..T6 ---
   if (upper.length() == 2 && upper.charAt(0) == 'T' && isDigit(upper.charAt(1))) {
     int idx = upper.charAt(1) - '1'; // T1 -> 0
     if (idx >= 0 && idx < NUM_SERVOS) {
@@ -162,7 +169,7 @@ void handleCommand(String line) {
       Serial.println(F(" selected. Type an angle (0-180) and press Enter."));
       Serial.println(F("   Type HOME to center it, EXIT to leave test mode."));
     } else {
-      Serial.println(F("Invalid servo number. Use T1 to T5."));
+      Serial.println(F("Invalid servo number. Use T1 to T6."));
     }
     return;
   }
@@ -196,7 +203,7 @@ void handleCommand(String line) {
     return;
   }
 
-  // --- Full control mode: e.g. "B90 S90 E90 W90 G90" ---
+  // --- Full control mode: e.g. "B90 S90 E90 P90 R90 G90" ---
   if (parseFullCommand(upper)) {
     return;
   }
@@ -204,7 +211,7 @@ void handleCommand(String line) {
   Serial.println(F("Unknown command. Type MENU for help."));
 }
 
-// Parses tokens like B90, S45, E120, W10, G0 from one line.
+// Parses tokens like B90, S45, E120, P10, R180, G0 from one line.
 // Returns true if at least one valid token was found and applied.
 bool parseFullCommand(String upper) {
   bool appliedAny = false;
@@ -246,8 +253,9 @@ int letterToServoIndex(char letter) {
     case 'B': return 0; // Base
     case 'S': return 1; // Shoulder
     case 'E': return 2; // Elbow
-    case 'W': return 3; // Wrist
-    case 'G': return 4; // Gripper
+    case 'P': return 3; // Wrist Pitch
+    case 'R': return 4; // Wrist Roll
+    case 'G': return 5; // Gripper
     default:  return -1;
   }
 }
@@ -314,15 +322,15 @@ void printPositions() {
 
 void printMenu() {
   Serial.println(F("================================================"));
-  Serial.println(F(" 4-DOF Robotic Arm Controller (Arduino Nano)"));
+  Serial.println(F(" 6-DOF Robotic Arm Controller (Arduino Nano)"));
   Serial.println(F("================================================"));
   Serial.println(F("SINGLE SERVO TEST MODE:"));
-  Serial.println(F("  T1 = Base, T2 = Shoulder, T3 = Elbow, T4 = Wrist, T5 = Gripper"));
+  Serial.println(F("  T1=Base T2=Shoulder T3=Elbow T4=WristPitch T5=WristRoll T6=Gripper"));
   Serial.println(F("  After selecting, type an angle (0-180), or HOME, or EXIT"));
   Serial.println();
   Serial.println(F("FULL CONTROL MODE (move several at once):"));
-  Serial.println(F("  B<angle> S<angle> E<angle> W<angle> G<angle>"));
-  Serial.println(F("  Example: B90 S90 E90 W90 G90"));
+  Serial.println(F("  B<angle> S<angle> E<angle> P<angle> R<angle> G<angle>"));
+  Serial.println(F("  Example: B90 S90 E90 P90 R90 G90"));
   Serial.println(F("  You can send only the ones you want, e.g: B45 E120"));
   Serial.println();
   Serial.println(F("OTHER COMMANDS:"));
