@@ -1,10 +1,9 @@
-<<<<<<< HEAD
 # ZAN Tech Robotic Arm Controller — 4-DOF & 6-DOF
-=======
-Robotic Arm Controller
->>>>>>> a5e6d265b398a35570a47b3e13b31c093a3c852b
 
-**Build a robot arm, flash one file, double-click one app, drag some sliders.**
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Open Source](https://img.shields.io/badge/Open%20Source-%E2%9D%A4-red.svg)](https://github.com/ZAN-Tech-bd/4-Dof-Robotc-Arm-controll)
+
+**Free and open source. Build a robot arm, flash one file, double-click one app, drag some sliders.**
 This repo has everything you need: Arduino firmware for a 5-servo (4-DOF) arm *or* a
 6-servo (6-DOF) arm, plus a single PC app with a modern slider interface that controls
 either one — no coding and no typing commands required to actually use the arm.
@@ -276,5 +275,11 @@ EXIT                        -> leave test mode
 
 ## 9. License
 
-Part of the ZAN Tech open-source robotics project collection — free to build, modify, and
-use for learning, hobby, and personal robotics projects.
+**MIT License** — see [LICENSE](LICENSE).
+
+This project is free and open source. You can use, copy, modify, merge, publish,
+distribute, and even sell copies of it — for learning, hobby builds, classroom use, or
+commercial products — as long as the original copyright notice and license text are
+kept. No warranty is provided; build and use at your own risk.
+
+Contributions, forks, and pull requests are welcome.
