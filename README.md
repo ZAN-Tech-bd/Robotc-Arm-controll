@@ -1,4 +1,4 @@
-﻿# 4-DoF Robotic Arm Controller
+Robotic Arm Controller
 
 A simple 5-servo robotic arm controlled by an Arduino Nano and a Python desktop app. The arm has a base, shoulder, elbow, wrist, and gripper, and the PC interface lets you move each joint with sliders instead of manually typing commands.
 
