@@ -69,6 +69,10 @@ and are controlled by the **same PC app** — you just tell the app which one yo
 │   ├── lib/main.dart               # The Flutter app (Android, Bluetooth)
 │   ├── releases/                   # Built APKs land here locally (not committed)
 │   └── README.md                   # Mobile app details / build instructions
+├── web-app/
+│   ├── index.html                  # The entire web app (USB, no install needed)
+│   ├── assets/                     # Logo/icon used by the web app
+│   └── README.md                   # Web app details / hosting notes
 ├── docs/
 │   └── screenshots/                # Images used in this README
 └── README.md                       # You are here
@@ -490,7 +494,36 @@ See [`mobile-app/README.md`](mobile-app/README.md) for the full build/dev guide.
 
 ---
 
-## 10. License
+## 10. Web app (no install needed)
+
+Don't have Python, or just want to open a web page instead of installing
+anything? [`web-app/index.html`](web-app/index.html) is a single static HTML
+file that controls the arm straight from **Chrome or Edge**, over USB, using
+the browser's built-in [Web Serial API](https://developer.chrome.com/docs/capabilities/serial) -
+no Python, no build step, no server required.
+
+![Web app main screen](docs/screenshots/web-app-main.jpg)
+
+### Use it
+
+1. Download [`web-app/index.html`](web-app/index.html) and its `assets/`
+   folder (same folder, next to each other), then just **double-click
+   `index.html`** to open it in Chrome or Edge — Web Serial works fine from a
+   local file, no hosting needed. (Or open the hosted copy, if this repo has
+   GitHub Pages enabled — see [`web-app/README.md`](web-app/README.md).)
+2. Pick your **Arm Type**, plug the board in over USB, click
+   **Connect over USB**, and choose it from the browser's own device picker.
+3. Drag the sliders. **Home All**, **Refresh Positions**, and the serial
+   console work exactly like the PC app.
+
+This only works over **USB** — Web Serial doesn't do Bluetooth (browsers only
+expose BLE to web pages, not the classic Bluetooth/SPP that HC-05 and the
+ESP32 firmware use). For Bluetooth, use the [mobile app](#9-mobile-app-android)
+instead. See [`web-app/README.md`](web-app/README.md) for details and limits.
+
+---
+
+## 11. License
 
 **MIT License** — see [LICENSE](LICENSE).
 

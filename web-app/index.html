@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZAN Tech Robotic Arm Controller — Web</title>
+<link rel="icon" href="assets/arm_icon.png">
+<meta name="description" content="Control the ZAN Tech 4-Servo / 4-DOF / 6-DOF robotic arm straight from your browser over USB - no Python, no install.">
+<style>
+  :root{
+    --zan-red:#FD110F;
+    --zan-blue:#2A2BB7;
+    --zan-blue-bright:#4850E6;
+    --bg-window:#0A0E1C;
+    --bg-panel:#121833;
+    --bg-panel-alt:#171F45;
+    --bg-field:#0E1430;
+    --text-primary:#F3F5FC;
+    --text-muted:#8B93B8;
+    --ok:#2ECC71;
+    --error:#FF4D4D;
+    --warn:#FFB020;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg-window);
+    color:var(--text-primary);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    min-height:100vh;
+  }
+  .wrap{
+    max-width:640px;
+    margin:0 auto;
+    padding:20px 16px 48px;
+  }
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand img{height:34px;}
+  .brand .title{font-size:20px;font-weight:800;}
+  .brand .title .zan{color:var(--zan-red);}
+  .brand .title .tech{color:var(--text-primary);}
+  .status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-muted);}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--error);display:inline-block;}
+  .dot.ok{background:var(--ok);}
+  .dot.warn{background:var(--warn);}
+
+  .panel{
+    background:var(--bg-panel);
+    border-radius:16px;
+    padding:16px;
+    margin-bottom:16px;
+  }
+  .label{
+    color:var(--text-muted);
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    margin-bottom:8px;
+  }
+  select, input[type=text]{
+    width:100%;
+    background:var(--bg-field);
+    color:var(--text-primary);
+    border:none;
+    border-radius:10px;
+    padding:12px;
+    font-size:14px;
+    font-family:inherit;
+  }
+  select:focus, input[type=text]:focus{outline:2px solid var(--zan-blue-bright);}
+
+  button{
+    font-family:inherit;
+    font-size:14px;
+    font-weight:600;
+    border:none;
+    border-radius:10px;
+    padding:14px 16px;
+    cursor:pointer;
+    color:var(--text-primary);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    transition:opacity .15s;
+  }
+  button:disabled{opacity:.5;cursor:not-allowed;}
+  button:not(:disabled):hover{opacity:.9;}
+  .btn-connect{background:var(--zan-blue);width:100%;margin-top:14px;}
+  .btn-connect.connected{background:var(--bg-panel-alt);}
+  .btn-home{background:var(--zan-red);flex:1;}
+  .btn-refresh{background:var(--bg-panel-alt);flex:1;}
+  .btn-ghost{background:transparent;color:var(--text-muted);padding:8px 4px;font-weight:500;}
+  .btn-send{background:var(--zan-blue);padding:12px 18px;}
+
+  .quick-actions{display:flex;gap:10px;margin-bottom:16px;}
+
+  .servo-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:8px 0;
+  }
+  .servo-row .name{width:100px;font-size:14px;flex-shrink:0;}
+  .servo-row input[type=range]{
+    flex:1;
+    -webkit-appearance:none;
+    height:6px;
+    border-radius:3px;
+    background:var(--bg-field);
+    outline:none;
+  }
+  .servo-row input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:20px;height:20px;border-radius:50%;
+    background:var(--zan-blue-bright);
+    cursor:pointer;
+    border:3px solid var(--text-primary);
+  }
+  .servo-row input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;border-radius:50%;
+    background:var(--zan-blue-bright);
+    cursor:pointer;
+    border:3px solid var(--text-primary);
+  }
+  .servo-row .value{
+    width:44px;text-align:center;
+    background:var(--zan-blue);
+    border-radius:8px;
+    padding:4px 0;
+    font-size:12px;font-weight:700;
+  }
+
+  .console-box{
+    background:var(--bg-field);
+    border-radius:10px;
+    padding:10px;
+    height:200px;
+    overflow-y:auto;
+    font-family:Consolas,"Courier New",monospace;
+    font-size:12px;
+    margin-top:8px;
+  }
+  .console-box div{white-space:pre-wrap;word-break:break-word;}
+  .console-box .sent{color:var(--zan-blue-bright);}
+  .console-box .recv{color:var(--ok);}
+  .console-box .system{color:var(--text-muted);}
+
+  .console-input-row{display:flex;gap:8px;margin-top:8px;}
+  .console-input-row input{flex:1;font-family:Consolas,"Courier New",monospace;}
+  .hint{color:var(--text-muted);font-size:11px;margin-top:6px;}
+
+  .unsupported{
+    background:var(--bg-panel-alt);
+    border-left:4px solid var(--warn);
+    border-radius:10px;
+    padding:14px 16px;
+    margin-bottom:16px;
+    font-size:14px;
+    line-height:1.5;
+    display:none;
+  }
+  .unsupported.show{display:block;}
+  .unsupported b{color:var(--warn);}
+
+  footer{
+    text-align:center;
+    color:var(--text-muted);
+    font-size:12px;
+    margin-top:24px;
+  }
+  footer a{color:var(--zan-blue-bright);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <img src="assets/arm_icon.png" alt="ZAN Tech">
+      <div class="title"><span class="zan">ZAN</span><span class="tech">TECH</span></div>
+    </div>
+    <div class="status">
+      <span class="dot" id="statusDot"></span>
+      <span id="statusText">Disconnected</span>
+    </div>
+  </header>
+
+  <div class="unsupported" id="unsupportedBox">
+    <b>Web Serial isn't available in this browser.</b> Use a Chromium-based
+    desktop browser - <b>Chrome</b> or <b>Edge</b> (desktop only; Web Serial
+    doesn't work on iOS/Android browsers or Firefox/Safari). This page talks
+    to the arm over USB with no install and no Python required.
+  </div>
+
+  <div class="panel">
+    <div class="label">Arm Type</div>
+    <select id="armType"></select>
+    <button class="btn-connect" id="connectBtn">Connect over USB</button>
+  </div>
+
+  <div class="panel">
+    <div class="label">Servos</div>
+    <div id="servoList"></div>
+  </div>
+
+  <div class="quick-actions">
+    <button class="btn-home" id="homeAllBtn">↺ Home All</button>
+    <button class="btn-refresh" id="refreshBtn">Refresh Positions</button>
+  </div>
+
+  <button class="btn-ghost" id="consoleToggle">▸ Show serial console</button>
+  <div id="consolePanel" style="display:none;">
+    <div class="console-box" id="consoleBox"></div>
+    <div class="console-input-row">
+      <input type="text" id="commandInput" placeholder="MENU, POS, HOMEALL, T1, B45 E120 ...">
+      <button class="btn-send" id="sendBtn">Send</button>
+    </div>
+    <div class="hint">Type any firmware command here, same as the Arduino Serial Monitor.</div>
+  </div>
+
+  <footer>
+    ZAN Tech Robotic Arm Controller - Web Edition · works with the USB-only
+    and HC-05 firmware's USB port · no install, runs entirely in your browser ·
+    <a href="https://github.com/ZAN-Tech-bd/4-Dof-Robotc-Arm-controll" target="_blank" rel="noopener">source on GitHub</a>
+  </footer>
+
+</div>
+
+<script>
+// ---------------------------------------------------------------- Arm profiles
+// Letter codes must match the single-letter codes each firmware's .ino
+// expects (see ../firmware/*/*.ino). Same three arms as the PC and mobile apps.
+const ARM_PROFILES = {
+  "4servo": {
+    label: "4-Servo Arm (4 servos)",
+    servos: [
+      { name: "Base", letter: "B" },
+      { name: "Shoulder", letter: "S" },
+      { name: "Elbow", letter: "E" },
+      { name: "Gripper", letter: "G" },
+    ],
+  },
+  "4dof": {
+    label: "4-DOF Arm (5 servos)",
+    servos: [
+      { name: "Base", letter: "B" },
+      { name: "Shoulder", letter: "S" },
+      { name: "Elbow", letter: "E" },
+      { name: "Wrist", letter: "W" },
+      { name: "Gripper", letter: "G" },
+    ],
+  },
+  "6dof": {
+    label: "6-DOF Arm (6 servos)",
+    servos: [
+      { name: "Base", letter: "B" },
+      { name: "Shoulder", letter: "S" },
+      { name: "Elbow", letter: "E" },
+      { name: "Wrist Pitch", letter: "P" },
+      { name: "Wrist Roll", letter: "R" },
+      { name: "Gripper", letter: "G" },
+    ],
+  },
+};
+const DEFAULT_PROFILE = "4servo";
+const HOME_ANGLE = 90;
+const BAUD_RATE = 9600;
+
+let currentProfileKey = DEFAULT_PROFILE;
+let port = null;
+let reader = null;
+let writer = null;
+let readLoopPromise = null;
+let lineBuffer = "";
+let connected = false;
+
+const el = {
+  armType: document.getElementById("armType"),
+  connectBtn: document.getElementById("connectBtn"),
+  servoList: document.getElementById("servoList"),
+  homeAllBtn: document.getElementById("homeAllBtn"),
+  refreshBtn: document.getElementById("refreshBtn"),
+  consoleToggle: document.getElementById("consoleToggle"),
+  consolePanel: document.getElementById("consolePanel"),
+  consoleBox: document.getElementById("consoleBox"),
+  commandInput: document.getElementById("commandInput"),
+  sendBtn: document.getElementById("sendBtn"),
+  statusDot: document.getElementById("statusDot"),
+  statusText: document.getElementById("statusText"),
+  unsupportedBox: document.getElementById("unsupportedBox"),
+};
+
+// ---------------------------------------------------------------- Setup
+function populateArmTypes() {
+  el.armType.innerHTML = "";
+  for (const [key, profile] of Object.entries(ARM_PROFILES)) {
+    const opt = document.createElement("option");
+    opt.value = key;
+    opt.textContent = profile.label;
+    el.armType.appendChild(opt);
+  }
+  el.armType.value = currentProfileKey;
+}
+
+function buildServoSliders() {
+  el.servoList.innerHTML = "";
+  const profile = ARM_PROFILES[currentProfileKey];
+  for (const servo of profile.servos) {
+    const row = document.createElement("div");
+    row.className = "servo-row";
+
+    const name = document.createElement("div");
+    name.className = "name";
+    name.textContent = servo.name;
+
+    const slider = document.createElement("input");
+    slider.type = "range";
+    slider.min = 0;
+    slider.max = 180;
+    slider.value = HOME_ANGLE;
+    slider.dataset.letter = servo.letter;
+
+    const value = document.createElement("div");
+    value.className = "value";
+    value.textContent = HOME_ANGLE;
+
+    slider.addEventListener("input", () => {
+      value.textContent = slider.value;
+    });
+    slider.addEventListener("change", () => {
+      sendCommand(`${servo.letter}${slider.value}`);
+    });
+
+    row.appendChild(name);
+    row.appendChild(slider);
+    row.appendChild(value);
+    el.servoList.appendChild(row);
+  }
+}
+
+function resetSliders() {
+  el.servoList.querySelectorAll("input[type=range]").forEach((s) => {
+    s.value = HOME_ANGLE;
+    s.nextSibling.textContent = HOME_ANGLE;
+  });
+}
+
+el.armType.addEventListener("change", () => {
+  currentProfileKey = el.armType.value;
+  buildServoSliders();
+});
+
+// ---------------------------------------------------------------- Console log
+function log(text, kind = "system") {
+  const line = document.createElement("div");
+  line.className = kind;
+  line.textContent = text;
+  el.consoleBox.appendChild(line);
+  el.consoleBox.scrollTop = el.consoleBox.scrollHeight;
+  while (el.consoleBox.childNodes.length > 400) {
+    el.consoleBox.removeChild(el.consoleBox.firstChild);
+  }
+}
+
+el.consoleToggle.addEventListener("click", () => {
+  const visible = el.consolePanel.style.display !== "none";
+  el.consolePanel.style.display = visible ? "none" : "block";
+  el.consoleToggle.textContent = visible ? "▸ Show serial console" : "▾ Hide serial console";
+});
+
+// ---------------------------------------------------------------- Web Serial
+function setStatus(state, text) {
+  el.statusDot.className = "dot" + (state === "ok" ? " ok" : state === "warn" ? " warn" : "");
+  el.statusText.textContent = text;
+}
+
+async function connect() {
+  if (!("serial" in navigator)) {
+    el.unsupportedBox.classList.add("show");
+    return;
+  }
+  try {
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate: BAUD_RATE });
+
+    const textDecoder = new TextDecoderStream();
+    port.readable.pipeTo(textDecoder.writable).catch(() => {});
+    reader = textDecoder.readable.getReader();
+
+    const textEncoder = new TextEncoderStream();
+    textEncoder.readable.pipeTo(port.writable).catch(() => {});
+    writer = textEncoder.writable.getWriter();
+
+    connected = true;
+    el.connectBtn.textContent = "Disconnect";
+    el.connectBtn.classList.add("connected");
+    setStatus("ok", "Connected");
+    log("Connected.", "system");
+
+    readLoopPromise = readLoop();
+    await sendCommand("POS");
+  } catch (err) {
+    log(`Connect failed: ${err.message || err}`, "system");
+    setStatus("error", "Disconnected");
+    port = null;
+  }
+}
+
+async function readLoop() {
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (value) {
+        lineBuffer += value;
+        let idx;
+        while ((idx = lineBuffer.indexOf("\n")) >= 0) {
+          const line = lineBuffer.slice(0, idx).replace(/\r$/, "");
+          lineBuffer = lineBuffer.slice(idx + 1);
+          if (line.trim().length > 0) log(line, "recv");
+        }
+      }
+    }
+  } catch (err) {
+    log(`Read error: ${err.message || err}`, "system");
+  }
+}
+
+async function disconnect() {
+  try {
+    if (reader) {
+      await reader.cancel().catch(() => {});
+      reader.releaseLock();
+      reader = null;
+    }
+    if (writer) {
+      await writer.close().catch(() => {});
+      writer = null;
+    }
+    if (port) {
+      await port.close().catch(() => {});
+      port = null;
+    }
+  } finally {
+    connected = false;
+    el.connectBtn.textContent = "Connect over USB";
+    el.connectBtn.classList.remove("connected");
+    setStatus("error", "Disconnected");
+    log("Disconnected.", "system");
+  }
+}
+
+el.connectBtn.addEventListener("click", () => {
+  if (connected) {
+    disconnect();
+  } else {
+    connect();
+  }
+});
+
+async function sendCommand(command) {
+  if (!connected || !writer) {
+    log('Not connected - tap "Connect over USB" first.', "system");
+    return;
+  }
+  try {
+    await writer.write(command + "\n");
+    log(`> ${command}`, "sent");
+  } catch (err) {
+    log(`Send failed: ${err.message || err}`, "system");
+  }
+}
+
+// ---------------------------------------------------------------- Actions
+el.homeAllBtn.addEventListener("click", () => {
+  resetSliders();
+  sendCommand("HOMEALL");
+});
+el.refreshBtn.addEventListener("click", () => sendCommand("POS"));
+
+function syncSlidersFromCommand(raw) {
+  const upper = raw.toUpperCase();
+  if (upper === "HOMEALL") {
+    resetSliders();
+    return;
+  }
+  const sliders = {};
+  el.servoList.querySelectorAll("input[type=range]").forEach((s) => {
+    sliders[s.dataset.letter] = s;
+  });
+  let i = 0;
+  while (i < upper.length) {
+    const letter = upper[i];
+    if (sliders[letter]) {
+      let j = i + 1;
+      while (j < upper.length && upper[j] >= "0" && upper[j] <= "9") j++;
+      if (j > i + 1) {
+        const angle = parseInt(upper.slice(i + 1, j), 10);
+        if (angle >= 0 && angle <= 180) {
+          sliders[letter].value = angle;
+          sliders[letter].nextSibling.textContent = angle;
+        }
+        i = j;
+        continue;
+      }
+    }
+    i++;
+  }
+}
+
+function sendManualCommand() {
+  const command = el.commandInput.value.trim();
+  if (!command) return;
+  sendCommand(command);
+  syncSlidersFromCommand(command);
+  el.commandInput.value = "";
+}
+el.sendBtn.addEventListener("click", sendManualCommand);
+el.commandInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") sendManualCommand();
+});
+
+// ---------------------------------------------------------------- Init
+populateArmTypes();
+buildServoSliders();
+if (!("serial" in navigator)) {
+  el.unsupportedBox.classList.add("show");
+  el.connectBtn.disabled = true;
+}
+window.addEventListener("beforeunload", () => {
+  if (connected) disconnect();
+});
+</script>
+</body>
+</html>
