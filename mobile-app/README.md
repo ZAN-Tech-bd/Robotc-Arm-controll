@@ -23,7 +23,7 @@ moves the Base servo to 90°.
 ## Download
 
 Grab the latest signed APK from the
-[Releases page](https://github.com/ZAN-Tech-bd/4-Dof-Robotc-Arm-controll/releases) -
+[Releases page](https://github.com/ZAN-Tech-bd/Robotc-Arm-controll/releases) -
 no build tools needed. See the main [repo README](../README.md#9-mobile-app-android)
 for install steps (you'll need to allow "install from unknown sources" since
 this isn't on the Play Store).

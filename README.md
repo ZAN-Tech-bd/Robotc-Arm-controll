@@ -1,7 +1,7 @@
 # ZAN Tech Robotic Arm Controller — 4-Servo, 4-DOF & 6-DOF
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Open Source](https://img.shields.io/badge/Open%20Source-%E2%9D%A4-red.svg)](https://github.com/ZAN-Tech-bd/4-Dof-Robotc-Arm-controll)
+[![Open Source](https://img.shields.io/badge/Open%20Source-%E2%9D%A4-red.svg)](https://github.com/ZAN-Tech-bd/Robotc-Arm-controll)
 
 **Free and open source. Build a robot arm, flash one file, open an app, drag some sliders.**
 This repo has everything you need: Arduino firmware for a 4-servo arm, a 5-servo (4-DOF)
@@ -445,7 +445,7 @@ firmware variants.
 ### Download and install
 
 1. Grab the latest `zantech-arm-controller-vX.Y.Z.apk` from the
-   [**Releases** page](https://github.com/ZAN-Tech-bd/4-Dof-Robotc-Arm-controll/releases).
+   [**Releases** page](https://github.com/ZAN-Tech-bd/Robotc-Arm-controll/releases).
 2. On your Android phone, open the downloaded APK. If this is your first app
    installed outside the Play Store, Android will ask you to allow
    **"Install unknown apps"** for your browser/file manager — allow it, then
