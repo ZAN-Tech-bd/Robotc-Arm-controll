@@ -4,10 +4,11 @@ ZAN Tech Robotic Arm Controller GUI
 A desktop app (Tkinter, built into Python) that talks to the Arduino Nano
 arm firmware over USB serial and lets you drag sliders to move every servo.
 
-Works with BOTH arm builds in this repo:
-  - firmware/4dof-arm/4dof-arm.ino  (5 servos: Base, Shoulder, Elbow, Wrist, Gripper)
-  - firmware/6dof-arm/6dof-arm.ino  (6 servos: Base, Shoulder, Elbow, Wrist Pitch,
-                                      Wrist Roll, Gripper)
+Works with ALL THREE arm builds in this repo:
+  - firmware/4servo-arm/4servo-arm.ino (4 servos: Base, Shoulder, Elbow, Gripper)
+  - firmware/4dof-arm/4dof-arm.ino     (5 servos: Base, Shoulder, Elbow, Wrist, Gripper)
+  - firmware/6dof-arm/6dof-arm.ino     (6 servos: Base, Shoulder, Elbow, Wrist Pitch,
+                                         Wrist Roll, Gripper)
 Pick which one you built from the "Arm Type" dropdown at the top - the slider
 panel rebuilds itself to match.
 
@@ -60,6 +61,16 @@ COLOR_WARN = "#FFB020"
 # --------------------------------------------------------------- Arm definitions
 # Letter codes must match the single-letter codes each firmware's .ino expects.
 ARM_PROFILES = {
+    "4servo": {
+        "label": "4-Servo Arm  (4 servos)",
+        "firmware": "firmware/4servo-arm/4servo-arm.ino",
+        "servos": [
+            ("Base", "B"),
+            ("Shoulder", "S"),
+            ("Elbow", "E"),
+            ("Gripper", "G"),
+        ],
+    },
     "4dof": {
         "label": "4-DOF Arm  (5 servos)",
         "firmware": "firmware/4dof-arm/4dof-arm.ino",
