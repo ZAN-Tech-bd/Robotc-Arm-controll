@@ -6,7 +6,10 @@ plugins {
 
 android {
     namespace = "com.zantech.zantech_arm_controller"
-    compileSdk = flutter.compileSdkVersion
+    // permission_handler_android requires compiling against API 37+; the
+    // Flutter default (flutter.compileSdkVersion) lags behind on this
+    // toolchain, so pin it explicitly.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

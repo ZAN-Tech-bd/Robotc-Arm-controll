@@ -65,6 +65,10 @@ and are controlled by the **same PC app** — you just tell the app which one yo
 │   ├── arm_controller_gui.py       # The PC app (controls either arm)
 │   ├── requirements.txt            # One dependency: pyserial
 │   └── Run Arm Controller.bat      # Double-click this - no terminal needed
+├── mobile-app/
+│   ├── lib/main.dart               # The Flutter app (Android, Bluetooth)
+│   ├── releases/                   # Built APKs land here locally (not committed)
+│   └── README.md                   # Mobile app details / build instructions
 ├── docs/
 │   └── screenshots/                # Images used in this README
 └── README.md                       # You are here
@@ -404,10 +408,54 @@ EXIT                        -> leave test mode
 | HC-05 won't pair, or pairing fails | Double-check VCC/GND and that TXD/RXD aren't swapped (HC-05 TXD → Nano RX pin, HC-05 RXD → Nano TX pin). Most modules default to pairing PIN `1234` or `0000`. |
 | Arm doesn't respond over Bluetooth, but USB works fine | Make sure you uploaded the `-hc05` or `-esp32` sketch (not the plain USB-only one) — only those listen on Bluetooth. Also confirm your phone is actually connected/paired, not just in range. |
 | ESP32 sketch won't compile | Install the **ESP32** board package and the **ESP32Servo** library (Section 5) — the plain `Servo.h` that ships with the IDE doesn't support ESP32. |
+| Mobile app can't find my device | Make sure you flashed a `-hc05` or `-esp32` firmware (the plain USB-only `.ino` has no Bluetooth) and that it's already **paired** in your phone's Bluetooth settings first — the app connects to paired devices, Android's classic-Bluetooth discovery is unreliable for pairing from inside an app. |
+| Mobile app asks for a permission / location toggle | Android needs the Bluetooth (and on Android 11 and below, Location) permission granted, and on older Android the system **Location toggle** switched on, purely to scan for classic Bluetooth devices — the app never reads or sends your actual location. |
 
 ---
 
-## 9. License
+## 9. Mobile app (Android)
+
+A Flutter-based Android app in [`mobile-app/`](mobile-app/) gives you the same
+"pick your arm, connect, drag sliders" experience as the PC app, but on your
+phone over Bluetooth — a clean, modern remote for the `-hc05` and `-esp32`
+firmware variants.
+
+### Download and install
+
+1. Grab the latest `zantech-arm-controller-vX.Y.Z.apk` from the
+   [**Releases** page](https://github.com/ZAN-Tech-bd/4-Dof-Robotc-Arm-controll/releases).
+2. On your Android phone, open the downloaded APK. If this is your first app
+   installed outside the Play Store, Android will ask you to allow
+   **"Install unknown apps"** for your browser/file manager — allow it, then
+   tap Install.
+3. Pair your HC-05 or ESP32 with your phone in **Settings → Bluetooth** first
+   (default HC-05 PIN is usually `1234` or `0000`; the ESP32 firmware needs
+   no PIN).
+4. Open the app, pick your **Arm Type**, tap **Connect**, choose your paired
+   device, and drag the sliders.
+
+Requires **Android 7.0 (API 24) or newer**.
+
+### Features
+
+Same controls as the PC app: an Arm Type selector (4-Servo / 4-DOF / 6-DOF),
+a slider per servo, **Home All** / **Refresh** buttons, and a collapsible
+serial console for typing raw firmware commands (`MENU`, `POS`, `T1`, ...)
+exactly like the Arduino Serial Monitor.
+
+### Building it yourself
+
+```bash
+cd mobile-app
+flutter pub get
+flutter build apk --release
+```
+
+See [`mobile-app/README.md`](mobile-app/README.md) for the full build/dev guide.
+
+---
+
+## 10. License
 
 **MIT License** — see [LICENSE](LICENSE).
 

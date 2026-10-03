@@ -1,3 +1,20 @@
 __pycache__/
 *.pyc
 pc-app/crash_log.txt
+
+# Flutter / Dart / Android build output (mobile-app/) - regenerate with
+# `flutter build apk --release`, never commit build artifacts.
+mobile-app/build/
+mobile-app/.dart_tool/
+mobile-app/.flutter-plugin-dependencies
+mobile-app/.flutter-plugins
+mobile-app/.flutter-plugins-dependencies
+mobile-app/android/.gradle/
+mobile-app/android/local.properties
+mobile-app/android/**/gradle-wrapper.jar
+mobile-app/*.iml
+mobile-app/.idea/
+
+# Release APKs are attached to GitHub Releases, not committed to git -
+# they're large binaries that would bloat the repo history.
+mobile-app/releases/*.apk

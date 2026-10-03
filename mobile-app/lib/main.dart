@@ -352,7 +352,7 @@ class _ArmControllerPageState extends State<ArmControllerPage> {
         titleSpacing: 16,
         title: Row(
           children: [
-            Image.asset('assets/images/zantech_logo_icon.png',
+            Image.asset('assets/images/app_icon.png',
                 height: 28,
                 errorBuilder: (context, error, stackTrace) =>
                     const SizedBox()),

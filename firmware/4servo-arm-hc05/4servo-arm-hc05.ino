@@ -1,32 +1,19 @@
 /*
-  4-Servo Robotic Arm Controller - HC-05 Bluetooth version (Arduino Nano)
+  4-Servo Robotic Arm Controller (Arduino Nano)
   4 Servos: Base, Shoulder, Elbow, Gripper (no separate wrist joint)
   All servos are 180-degree servos, assembled/centered at 90 degrees.
 
-  This is the Bluetooth sibling of firmware/4servo-arm/4servo-arm.ino - same
-  serial protocol, same menu, same behavior. The ONLY difference is where
-  commands come from: this version also listens on an HC-05 Bluetooth module
-  (wired to two extra pins via SoftwareSerial), so you can control the arm
-  wirelessly from a phone (e.g. "Serial Bluetooth Terminal" app) instead of a
-  USB cable. USB Serial still works at the same time, for debugging with the
-  Arduino IDE.
+  Controlled over Serial Monitor (9600 baud, line ending = Newline).
+  This is the 4-servo sibling of firmware/4dof-arm and firmware/6dof-arm -
+  same serial protocol and behavior, just one joint fewer (no wrist). The
+  ZAN Tech PC app (pc-app/) talks to any of the three depending on which
+  "Arm Type" you pick in its menu.
 
-  ---------------- HC-05 WIRING ----------------
-  HC-05 VCC  -> 5V (or 3.3V if your HC-05 board requires it - check its label)
-  HC-05 GND  -> GND
-  HC-05 TXD  -> Nano D2   (RX side of SoftwareSerial)
-  HC-05 RXD  -> Nano D4   (TX side of SoftwareSerial)
-          NOTE: HC-05 RXD is 3.3V logic. If your module has no onboard level
-          shifter, put a simple voltage divider (e.g. 1k + 2k resistors)
-          between Nano D4 and HC-05 RXD to avoid feeding it 5V.
-  Default HC-05 data-mode baud rate is 9600, matching BT_BAUD below - if your
-  module was reconfigured to a different baud, change BT_BAUD to match.
+  TWO MODES:
+    1) SINGLE TEST MODE  - move and tune one servo at a time
+    2) FULL CONTROL MODE - move all servos together with one command
 
-  Pair the HC-05 with your phone/PC (default PIN is usually 1234 or 0000).
-  Once paired, open any serial Bluetooth terminal app and send the exact same
-  commands described below - the HC-05 just becomes another serial port.
-
-  ---------------- SERIAL / BLUETOOTH COMMANDS ----------------
+  ---------------- SERIAL COMMANDS ----------------
   MENU                 -> show the menu again
 
   --- Single servo test mode ---
@@ -50,13 +37,6 @@
 */
 
 #include <Servo.h>
-#include <SoftwareSerial.h>
-
-// ---------- Bluetooth (HC-05) wiring ----------
-const uint8_t BT_RX_PIN = 2; // to HC-05 TXD
-const uint8_t BT_TX_PIN = 4; // to HC-05 RXD (through a voltage divider - see above)
-const long    BT_BAUD   = 9600;
-SoftwareSerial bt(BT_RX_PIN, BT_TX_PIN);
 
 // ---------- Pin configuration ----------
 const uint8_t PIN_BASE     = 3;
@@ -77,53 +57,50 @@ const int HOME_ANGLE = 90; // matches how the arm was physically assembled
 const int ANGLE_MIN  = 0;
 const int ANGLE_MAX  = 180;
 
-// Once a servo reaches its target, we stop sending it a PWM pulse - see the
-// 4servo-arm/4servo-arm.ino comments for why. Same behavior here.
+// Once a servo reaches its target, we stop sending it a PWM pulse. A servo that keeps
+// receiving a signal can twitch/drift on its own from electrical noise or a slightly
+// unstable power supply - it looks like "the arm moves by itself" even though nothing
+// sent a command. Detaching after it settles keeps it perfectly still until the next
+// real command re-attaches it and moves it. Set to false if your arm instead needs to
+// stay powered to resist gravity (e.g. a heavy shoulder joint sagging when idle).
 const bool          DETACH_WHEN_IDLE   = true;
-const unsigned long SETTLE_TIME_MS     = 500;
+const unsigned long SETTLE_TIME_MS     = 500; // time to let the servo physically get there
 
-// Smooth motion: step a few degrees at a time instead of snapping to target.
-const uint8_t        SERVO_STEP_DEGREES = 5;
-const unsigned long  SERVO_STEP_DELAY_MS = 25;
+// Smooth motion: instead of jumping straight to the target angle, each servo steps
+// there a few degrees at a time (0 -> 5 -> 10 -> 15 ... -> 90), which looks much nicer
+// and is gentler on the gears than a sudden jump.
+const uint8_t        SERVO_STEP_DEGREES = 5;   // how many degrees to move per step
+const unsigned long  SERVO_STEP_DELAY_MS = 25; // pause between steps (ms)
 
 // ---------- Mode state ----------
 bool    singleTestMode   = false;
-int8_t  selectedServo    = -1;
+int8_t  selectedServo    = -1; // index into servos[], -1 = none selected
 
 String inputLine = "";
 
 void setup() {
   Serial.begin(9600);
-  bt.begin(BT_BAUD);
 
   for (uint8_t i = 0; i < NUM_SERVOS; i++) {
     servos[i].attach(servoPins[i]);
     servoAttached[i] = true;
     servoAngle[i] = HOME_ANGLE;
-    servos[i].write(HOME_ANGLE);
+    servos[i].write(HOME_ANGLE); // start every servo at its assembled 90-degree position
     servoMoveDeadline[i] = millis() + SETTLE_TIME_MS;
   }
 
+  // Discard any garbage bytes that showed up on the serial line while the
+  // board was powering up / the USB-serial chip was enumerating, so they
+  // can't be mistaken for a command.
   delay(50);
   while (Serial.available() > 0) Serial.read();
-  while (bt.available() > 0) bt.read();
 
   printMenu();
 }
 
 void loop() {
-  readStreamInto(Serial);
-  readStreamInto(bt);
-  releaseSettledServos();
-}
-
-// Reads whatever bytes are waiting on one input stream (USB Serial or the
-// HC-05 SoftwareSerial link) and feeds them through the same command parser,
-// so a command typed on either one works identically.
-template <typename StreamT>
-void readStreamInto(StreamT &stream) {
-  while (stream.available() > 0) {
-    char c = stream.read();
+  while (Serial.available() > 0) {
+    char c = Serial.read();
     if (c == '\n' || c == '\r') {
       if (inputLine.length() > 0) {
         handleCommand(inputLine);
@@ -133,8 +110,12 @@ void readStreamInto(StreamT &stream) {
       inputLine += c;
     }
   }
+
+  releaseSettledServos();
 }
 
+// Stops sending a PWM pulse to any servo that reached its target angle a
+// while ago, so an idle arm holds perfectly still instead of twitching.
 void releaseSettledServos() {
   if (!DETACH_WHEN_IDLE) return;
 
@@ -145,17 +126,6 @@ void releaseSettledServos() {
       servoAttached[i] = false;
     }
   }
-}
-
-// Sends the same line out on both USB Serial and the HC-05 link, so you can
-// watch the Arduino IDE's Serial Monitor and the phone app at the same time.
-void outPrint(const String &s) {
-  Serial.print(s);
-  bt.print(s);
-}
-void outPrintln(const String &s) {
-  Serial.println(s);
-  bt.println(s);
 }
 
 // ---------------- Command handling ----------------
@@ -179,60 +149,65 @@ void handleCommand(String line) {
 
   if (upper == "HOMEALL") {
     for (uint8_t i = 0; i < NUM_SERVOS; i++) moveServo(i, HOME_ANGLE);
-    outPrintln(F("All servos moved to HOME (90 degrees)."));
+    Serial.println(F("All servos moved to HOME (90 degrees)."));
     return;
   }
 
+  // --- Enter single-servo test mode: T1..T4 ---
   if (upper.length() == 2 && upper.charAt(0) == 'T' && isDigit(upper.charAt(1))) {
-    int idx = upper.charAt(1) - '1';
+    int idx = upper.charAt(1) - '1'; // T1 -> 0
     if (idx >= 0 && idx < NUM_SERVOS) {
       singleTestMode = true;
       selectedServo = idx;
-      outPrint(F("-- TEST MODE: "));
-      outPrint(servoNames[idx]);
-      outPrintln(F(" selected. Type an angle (0-180) and press Enter."));
-      outPrintln(F("   Type HOME to center it, EXIT to leave test mode."));
+      Serial.print(F("-- TEST MODE: "));
+      Serial.print(servoNames[idx]);
+      Serial.println(F(" selected. Type an angle (0-180) and press Enter."));
+      Serial.println(F("   Type HOME to center it, EXIT to leave test mode."));
     } else {
-      outPrintln(F("Invalid servo number. Use T1 to T4."));
+      Serial.println(F("Invalid servo number. Use T1 to T4."));
     }
     return;
   }
 
+  // --- While inside single test mode ---
   if (singleTestMode) {
     if (upper == "EXIT") {
-      outPrint(F("Exiting test mode for "));
-      outPrintln(servoNames[selectedServo]);
+      Serial.print(F("Exiting test mode for "));
+      Serial.println(servoNames[selectedServo]);
       singleTestMode = false;
       selectedServo = -1;
       return;
     }
     if (upper == "HOME") {
       moveServo(selectedServo, HOME_ANGLE);
-      outPrint(servoNames[selectedServo]);
-      outPrintln(F(" -> HOME (90 deg)"));
+      Serial.print(servoNames[selectedServo]);
+      Serial.println(F(" -> HOME (90 deg)"));
       return;
     }
     if (isNumber(line)) {
       int angle = line.toInt();
       if (setAngleChecked(selectedServo, angle)) {
-        outPrint(servoNames[selectedServo]);
-        outPrint(F(" -> "));
-        outPrint(String(servoAngle[selectedServo]));
-        outPrintln(F(" deg"));
+        Serial.print(servoNames[selectedServo]);
+        Serial.print(F(" -> "));
+        Serial.print(servoAngle[selectedServo]);
+        Serial.println(F(" deg"));
       }
       return;
     }
-    outPrintln(F("Unknown input. Type an angle (0-180), HOME, or EXIT."));
+    Serial.println(F("Unknown input. Type an angle (0-180), HOME, or EXIT."));
     return;
   }
 
+  // --- Full control mode: e.g. "B90 S90 E90 G90" ---
   if (parseFullCommand(upper)) {
     return;
   }
 
-  outPrintln(F("Unknown command. Type MENU for help."));
+  Serial.println(F("Unknown command. Type MENU for help."));
 }
 
+// Parses tokens like B90, S45, E120, G0 from one line.
+// Returns true if at least one valid token was found and applied.
 bool parseFullCommand(String upper) {
   bool appliedAny = false;
   int start = 0;
@@ -280,14 +255,16 @@ int letterToServoIndex(char letter) {
 
 bool setAngleChecked(int servoIndex, int angle) {
   if (angle < ANGLE_MIN || angle > ANGLE_MAX) {
-    outPrint(F("Angle out of range (0-180): "));
-    outPrintln(String(angle));
+    Serial.print(F("Angle out of range (0-180): "));
+    Serial.println(angle);
     return false;
   }
   moveServo(servoIndex, angle);
   return true;
 }
 
+// Moves one servo smoothly from its current angle to the target, a few degrees
+// at a time (see SERVO_STEP_DEGREES) instead of snapping straight there.
 void moveServo(int servoIndex, int targetAngle) {
   if (!servoAttached[servoIndex]) {
     servos[servoIndex].attach(servoPins[servoIndex]);
@@ -310,7 +287,7 @@ void moveServo(int servoIndex, int targetAngle) {
     }
   }
 
-  servos[servoIndex].write(targetAngle);
+  servos[servoIndex].write(targetAngle); // make sure it lands exactly on target
   servoAngle[servoIndex] = targetAngle;
   servoMoveDeadline[servoIndex] = millis() + SETTLE_TIME_MS;
 }
@@ -326,35 +303,32 @@ bool isNumber(String s) {
 // ---------------- Helper output ----------------
 
 void printPositions() {
-  outPrint(F("Positions -> "));
+  Serial.print(F("Positions -> "));
   for (uint8_t i = 0; i < NUM_SERVOS; i++) {
-    outPrint(servoNames[i]);
-    outPrint(F(": "));
-    outPrint(String(servoAngle[i]));
-    if (i < NUM_SERVOS - 1) outPrint(F(" | "));
+    Serial.print(servoNames[i]);
+    Serial.print(F(": "));
+    Serial.print(servoAngle[i]);
+    if (i < NUM_SERVOS - 1) Serial.print(F(" | "));
   }
-  outPrintln(F(""));
+  Serial.println();
 }
 
 void printMenu() {
-  outPrintln(F("================================================"));
-  outPrintln(F(" 4-Servo Robotic Arm Controller (Nano + HC-05 BT)"));
-  outPrintln(F("================================================"));
-  outPrintln(F("SINGLE SERVO TEST MODE:"));
-  outPrintln(F("  T1=Base T2=Shoulder T3=Elbow T4=Gripper"));
-  outPrintln(F("  After selecting, type an angle (0-180), or HOME, or EXIT"));
-  outPrintln(F(""));
-  outPrintln(F("FULL CONTROL MODE (move several at once):"));
-  outPrintln(F("  B<angle> S<angle> E<angle> G<angle>"));
-  outPrintln(F("  Example: B90 S90 E90 G90"));
-  outPrintln(F("  You can send only the ones you want, e.g: B45 E120"));
-  outPrintln(F(""));
-  outPrintln(F("OTHER COMMANDS:"));
-  outPrintln(F("  HOMEALL -> center all servos to 90 degrees"));
-  outPrintln(F("  POS     -> print current angle of all servos"));
-  outPrintln(F("  MENU    -> show this menu again"));
-  outPrintln(F("------------------------------------------------"));
-  outPrintln(F(" Works over USB Serial AND the HC-05 Bluetooth link"));
-  outPrintln(F(" at the same time - send commands from either one."));
-  outPrintln(F("================================================"));
+  Serial.println(F("================================================"));
+  Serial.println(F(" 4-Servo Robotic Arm Controller (Arduino Nano)"));
+  Serial.println(F("================================================"));
+  Serial.println(F("SINGLE SERVO TEST MODE:"));
+  Serial.println(F("  T1=Base T2=Shoulder T3=Elbow T4=Gripper"));
+  Serial.println(F("  After selecting, type an angle (0-180), or HOME, or EXIT"));
+  Serial.println();
+  Serial.println(F("FULL CONTROL MODE (move several at once):"));
+  Serial.println(F("  B<angle> S<angle> E<angle> G<angle>"));
+  Serial.println(F("  Example: B90 S90 E90 G90"));
+  Serial.println(F("  You can send only the ones you want, e.g: B45 E120"));
+  Serial.println();
+  Serial.println(F("OTHER COMMANDS:"));
+  Serial.println(F("  HOMEALL -> center all servos to 90 degrees"));
+  Serial.println(F("  POS     -> print current angle of all servos"));
+  Serial.println(F("  MENU    -> show this menu again"));
+  Serial.println(F("================================================"));
 }
