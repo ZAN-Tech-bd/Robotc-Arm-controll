@@ -420,6 +420,19 @@ A Flutter-based Android app in [`mobile-app/`](mobile-app/) gives you the same
 phone over Bluetooth — a clean, modern remote for the `-hc05` and `-esp32`
 firmware variants.
 
+<table>
+<tr>
+<td><img src="docs/screenshots/mobile-app/app-main-4servo.jpg" width="260" alt="Main screen, 4-Servo arm"></td>
+<td><img src="docs/screenshots/mobile-app/app-6dof-sliders.jpg" width="260" alt="6-DOF arm with sliders moved"></td>
+<td><img src="docs/screenshots/mobile-app/app-console.jpg" width="260" alt="Serial console panel open"></td>
+</tr>
+<tr>
+<td align="center">Main screen (4-Servo arm)</td>
+<td align="center">6-DOF arm, sliders in use</td>
+<td align="center">Serial console panel</td>
+</tr>
+</table>
+
 ### Download and install
 
 1. Grab the latest `zantech-arm-controller-vX.Y.Z.apk` from the
@@ -435,6 +448,28 @@ firmware variants.
    device, and drag the sliders.
 
 Requires **Android 7.0 (API 24) or newer**.
+
+### How to use it
+
+1. **Arm Type** — pick 4-Servo / 4-DOF / 6-DOF to match the firmware you
+   flashed. The servo list below it updates automatically (4, 5, or 6 sliders).
+2. **Connect** — tap it to open the device picker. It lists already-**paired**
+   devices first, and (where your Android version allows it) a **Scan**
+   button to discover nearby ones too. Tap your HC-05 or ESP32 to connect.
+   The status dot in the top-right turns green once connected.
+3. **Drag a slider** — that joint moves on the real arm as soon as you let go
+   (not while dragging, to avoid flooding the Bluetooth link with every
+   intermediate value).
+4. **Home All** — snaps every joint back to 90° (the arm's assembled/center
+   position) and resets all the sliders to match.
+5. **Refresh** — asks the arm what angle every servo is actually at right now
+   (useful after using the serial console, or if the app and arm ever look
+   out of sync).
+6. **Show serial console** — expands a log + command box at the bottom, for
+   typing any raw firmware command directly (`MENU`, `POS`, `T1`, `B45 E120`,
+   `HOMEALL`, ...) and watching the arm's replies live — the mobile
+   equivalent of the Arduino IDE's Serial Monitor. Sending a servo command
+   here also moves the matching slider, so they never fall out of sync.
 
 ### Features
 

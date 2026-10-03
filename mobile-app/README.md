@@ -12,6 +12,14 @@ moves the Base servo to 90°.
 
 ![App icon](assets/images/app_icon.png)
 
+<table>
+<tr>
+<td><img src="../docs/screenshots/mobile-app/app-main-4servo.jpg" width="240" alt="Main screen, 4-Servo arm"></td>
+<td><img src="../docs/screenshots/mobile-app/app-6dof-sliders.jpg" width="240" alt="6-DOF arm with sliders moved"></td>
+<td><img src="../docs/screenshots/mobile-app/app-console.jpg" width="240" alt="Serial console panel open"></td>
+</tr>
+</table>
+
 ## Download
 
 Grab the latest signed APK from the
@@ -19,6 +27,22 @@ Grab the latest signed APK from the
 no build tools needed. See the main [repo README](../README.md#9-mobile-app-android)
 for install steps (you'll need to allow "install from unknown sources" since
 this isn't on the Play Store).
+
+## How to use it
+
+1. **Arm Type** — pick 4-Servo / 4-DOF / 6-DOF to match the firmware you
+   flashed; the servo list updates automatically.
+2. **Connect** — opens the device picker (paired devices, plus a **Scan**
+   button where the platform supports it). Tap your HC-05 or ESP32.
+3. **Drag a slider** — the joint moves on release (not mid-drag, so the
+   Bluetooth link isn't flooded with every intermediate value).
+4. **Home All** — centers every servo at 90° and resets the sliders to match.
+5. **Refresh** — re-reads the arm's actual current angles (handy after using
+   the console, or if the UI and arm ever look out of sync).
+6. **Show serial console** — an expandable log + command box for typing any
+   raw firmware command (`MENU`, `POS`, `T1`, `B45 E120`, `HOMEALL`, ...),
+   the mobile equivalent of the Arduino Serial Monitor. A command typed here
+   that moves a servo also updates its slider.
 
 ## Features
 
