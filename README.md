@@ -3,19 +3,24 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Open Source](https://img.shields.io/badge/Open%20Source-%E2%9D%A4-red.svg)](https://github.com/ZAN-Tech-bd/4-Dof-Robotc-Arm-controll)
 
-**Free and open source. Build a robot arm, flash one file, double-click one app, drag some sliders.**
+**Free and open source. Build a robot arm, flash one file, open an app, drag some sliders.**
 This repo has everything you need: Arduino firmware for a 4-servo arm, a 5-servo (4-DOF)
-arm, *or* a 6-servo (6-DOF) arm, plus a single PC app with a modern slider interface that
-controls any of them — no coding and no typing commands required to actually use the arm.
+arm, *or* a 6-servo (6-DOF) arm — plus **three different apps to control it**, so you can
+pick whichever fits your setup: a **PC app** (Python, USB), a **mobile app**
+(Android, Bluetooth), and a **web app** (any Chrome/Edge browser, USB, zero install).
+No coding and no typing commands required to actually use the arm with any of them.
 
 ```
-┌─────────────────────────┐        USB Serial        ┌───────────────────────────┐
-│   ZAN Tech PC App        │ ◄─────────────────────► │   Arduino Nano             │
-│   (Python, double-click) │   "B90\n" "S45\n" etc.   │   drives 4, 5 or 6 servos  │
-│   - pick your Arm Type   │                          │   0-180° each, smooth move │
-│   - sliders per joint    │                          │                            │
-│   - Home All / live log  │                          │                            │
-└─────────────────────────┘                           └───────────────────────────┘
+┌──────────────────────────┐                           ┌───────────────────────────┐
+│  ZAN Tech PC App          │ ◄── USB Serial ─────────► │                           │
+│  (Python, double-click)   │     "B90\n" "S45\n" etc.  │   Arduino Nano / ESP32    │
+├──────────────────────────┤                           │   drives 4, 5 or 6 servos  │
+│  ZAN Tech Mobile App      │ ◄── Bluetooth (HC-05/     │   0-180° each, smooth move │
+│  (Android, Flutter)       │     ESP32 built-in) ─────►│                           │
+├──────────────────────────┤                           │                           │
+│  ZAN Tech Web App         │ ◄── USB Serial ─────────► │                           │
+│  (Chrome/Edge, no install)│     via Web Serial API    │                           │
+└──────────────────────────┘                           └───────────────────────────┘
 ```
 
 ![ZAN Tech Robotic Arm Controller - main screen](docs/screenshots/gui-main.png)
